@@ -1,22 +1,24 @@
 import { NextFunction, Request, Response } from "express"
-import { User } from "../models/User"
+import { IUser, User } from "../models/User"
+import { ObjectId } from "mongoose"
 
-interface IUserMongoDb {
+export interface IUserMongoDb {
+  _id: ObjectId,
   username: string,
   email: string,
-  password: string
+  password: string,
+  createdAt: Date,
+  updatedAt: Date,
+  __v: number
 }
 
 
 export interface IUserRepository {
   registerUser(req: Request, res: Response, next: NextFunction): void
-  loginUser(req: Request, res: Response, next: NextFunction): void
+  loginUser(req: Request, res: Response, next: NextFunction): Promise<IUser | null>
 }
 
 export class UserRepository implements IUserRepository {
-  constructor() {
-    
-  }
 
   async registerUser(req: Request, res: Response, next: NextFunction) {
     const newUser = new User({
@@ -24,11 +26,13 @@ export class UserRepository implements IUserRepository {
       email: req.body.email,
       password: req.body.password
     })
+    console.log(newUser)
 
-    await newUser.save()
+    const response = await newUser.save({ validateBeforeSave: true })
+    console.log(response)
   }
 
-  async loginUser(req: Request, res: Response, next: NextFunction): Promise<IUserMongoDb | null> {
-    return await User.authenticate(req.body.username, req.body.password)
+  async loginUser(req: Request, res: Response, next: NextFunction): Promise<IUser | null> {
+      return await User.authenticate(req.body.username, req.body.password)
   }
 }

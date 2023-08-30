@@ -2,24 +2,33 @@ import { GET, POST, route } from "awilix-express"
 import { IUserService } from "../services/UserService"
 import { User } from "../models/User"
 import { NextFunction, Request, Response } from "express"
+import createError, { HttpError } from 'http-errors';
+
+interface CustomError extends Error {
+  status?: number
+}
+
 
 @route('/user')
 export class UserController {
-  constructor(private UserService: IUserService) {
-    this.UserService = UserService
+  #userService
+
+  constructor(UserService: IUserService) {
+    this.#userService = UserService
   }
 
   @route('/register')
   @POST()
   async registerUser(req: Request, res: Response, next: NextFunction) {
     try {
-      await this.UserService.registerUser(req, res, next)
+      console.log('register')
+      await this.#userService.registerUser(req, res, next)
 
       res
         .status(201)
         .json('Created a user')
 
-    } catch (error) {
+    } catch (error: any) {
       next(error)
     }
   }
@@ -27,22 +36,14 @@ export class UserController {
   @route('/login')
   @POST()
   async loginUser(req: Request, res: Response, next: NextFunction) {
-    const accessToken = await this.UserService.loginUser(req, res, next)
-
-    res
-      .status(201)
-      .json({access_token: accessToken})
+    try {
+      const accessToken = await this.#userService.loginUser(req, res, next)
+  
+      res
+        .status(200)
+        .json({access_token: accessToken})
+    } catch (error) {
+      next(error)
+    }
   }
-
-  /* testLogin = async () => {
-    console.log('TEST LOGIN')
-    this.AuthService.registerUser()
-    const user = new User({
-      name: 'Bill',
-      email: 'bill@gmail.com',
-      password: "test"
-    })
-
-    await user.save()
-  } */
 }

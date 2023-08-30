@@ -39,7 +39,7 @@ try {
         .status(400)
         .json({
           status_code: 400,
-          message: 'The request cannot or will not be processed due to something that is perceived to be a client error (for example, validation error).'
+          message: (err.message && err.message !== 'Bad Request') ? err.message : 'The request cannot or will not be processed due to something that is perceived to be a client error (for example, validation error).'
         })
     } else if (err.status === 401) {
       return res
@@ -58,6 +58,15 @@ try {
           status_code: 500,
           message: 'An unexpected condition was encountered.'
         })
+    } else if (req.app.get('env') !== 'development') {
+      if(err.status !== undefined) {
+        return res
+          .status(err.status)
+          .json({
+            status: err.status,
+            message: err.message
+          })
+      }
     }
 
     if (req.app.get('env') !== 'development') {
