@@ -1,8 +1,6 @@
 import express, { NextFunction, Request, Response } from "express"
 import { loadContainer } from './container'
 import helmet from 'helmet'
-import { join } from 'node:path'
-import path from 'path'
 import { loadControllers } from 'awilix-express'
 import { connectDataBase } from './config/mongoose.ts'
 
