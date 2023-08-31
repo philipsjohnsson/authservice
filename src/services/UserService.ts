@@ -13,6 +13,13 @@ export interface IUserService {
   updateUser(): void
 }
 
+interface ValidationErrorTest extends Error {
+  errors: {
+    password: string,
+    path: string
+  }
+}
+
 export class UserService implements IUserService {
   #userRepository
 
@@ -26,7 +33,11 @@ export class UserService implements IUserService {
     
       await this.#userRepository.registerUser(req, res, next)
     } catch (error: any) {
-      if(error.errors.password.path === 'password') {
+      console.log(error)
+      console.log(error.code)
+      if(error.code === 11000) {
+        throw createError(400, 'This username or email is already in use. Please choose a different username or use a different email address.')
+      } else if(error.errors.password.path === 'password') {
         throw createError(400, error.errors.password.message)
       } else {
         throw error
