@@ -24,7 +24,7 @@ export class UserService implements IUserService {
     
       await this.#userRepository.registerUser(req, res, next)
     } catch (error) {
-      this.#handleValidationError(error)
+      this.#handleValidationErrorRegister(error)
     }
   }
 
@@ -53,7 +53,7 @@ export class UserService implements IUserService {
     return null
   }
 
-  #handleValidationError(error: any) {
+  #handleValidationErrorRegister(error: any) {
     if(error.code === 11000) {
       throw createError(400, 'This username or email is already in use. Please choose a different username or use a different email address.')
     } else if(error.errors.password.path === 'password') {

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express"
 import { IUser, User } from "../models/User"
 import { ObjectId } from "mongoose"
+import createError from 'http-errors'
 
 export interface IUserMongoDb {
   _id: ObjectId,
@@ -21,16 +22,24 @@ export interface IUserRepository {
 export class UserRepository implements IUserRepository {
 
   async registerUser(req: Request, res: Response, next: NextFunction) {
-    const newUser = new User({
-      username: req.body.username,
-      email: req.body.email,
-      password: req.body.password
-    })
-
-    await newUser.save({ validateBeforeSave: true })
+    try {
+      const newUser = new User({
+        username: req.body.username,
+        email: req.body.email,
+        password: req.body.password
+      })
+  
+      await newUser.save({ validateBeforeSave: true })
+    } catch (error) {
+      throw createError(500)
+    }
   }
 
   async loginUser(req: Request, res: Response, next: NextFunction): Promise<IUser | null> {
+    try {
       return await User.authenticate(req.body.username, req.body.password)
+    } catch (error) {
+      throw createError(500)
+    }
   }
 }
