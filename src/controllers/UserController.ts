@@ -1,13 +1,6 @@
-import { GET, POST, route } from "awilix-express"
+import { POST, route } from "awilix-express"
 import { IUserService } from "../services/UserService"
-import { User } from "../models/User"
 import { NextFunction, Request, Response } from "express"
-import createError, { HttpError } from 'http-errors';
-
-interface CustomError extends Error {
-  status?: number
-}
-
 
 @route('/user')
 export class UserController {
@@ -21,14 +14,13 @@ export class UserController {
   @POST()
   async registerUser(req: Request, res: Response, next: NextFunction) {
     try {
-      console.log('register')
       await this.#userService.registerUser(req, res, next)
 
       res
         .status(201)
         .json('Created a user')
 
-    } catch (error: any) {
+    } catch (error) {
       next(error)
     }
   }

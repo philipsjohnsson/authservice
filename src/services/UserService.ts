@@ -8,16 +8,7 @@ import { IUser } from "../models/User"
 
 export interface IUserService {
   loginUser(req: Request, res: Response, next: NextFunction): Promise<string | null>,
-  registerUser(req: Request, res: Response, next: NextFunction): void,
-  deleteUser(): void,
-  updateUser(): void
-}
-
-interface ValidationErrorTest extends Error {
-  errors: {
-    password: string,
-    path: string
-  }
+  registerUser(req: Request, res: Response, next: NextFunction): void
 }
 
 export class UserService implements IUserService {
@@ -32,16 +23,8 @@ export class UserService implements IUserService {
       isCheckClientBadRequestOk(req, res, next)
     
       await this.#userRepository.registerUser(req, res, next)
-    } catch (error: any) {
-      console.log(error)
-      console.log(error.code)
-      if(error.code === 11000) {
-        throw createError(400, 'This username or email is already in use. Please choose a different username or use a different email address.')
-      } else if(error.errors.password.path === 'password') {
-        throw createError(400, error.errors.password.message)
-      } else {
-        throw error
-      }
+    } catch (error) {
+      this.#handleValidationError(error)
     }
   }
 
@@ -62,7 +45,6 @@ export class UserService implements IUserService {
           algorithm: 'RS256',
           expiresIn: process.env.ACCESS_TOKEN_LIFE
         })
-        console.log(accessToken)
   
         return accessToken
       }
@@ -71,11 +53,13 @@ export class UserService implements IUserService {
     return null
   }
 
-  updateUser() {
-    console.log('update a user')
-  }
-
-  deleteUser() {
-    console.log('delete user')
+  #handleValidationError(error: any) {
+    if(error.code === 11000) {
+      throw createError(400, 'This username or email is already in use. Please choose a different username or use a different email address.')
+    } else if(error.errors.password.path === 'password') {
+      throw createError(400, error.errors.password.message)
+    } else {
+      throw error
+    }
   }
 }

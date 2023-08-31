@@ -26,10 +26,8 @@ export class UserRepository implements IUserRepository {
       email: req.body.email,
       password: req.body.password
     })
-    console.log(newUser)
 
-    const response = await newUser.save({ validateBeforeSave: true })
-    console.log(response)
+    await newUser.save({ validateBeforeSave: true })
   }
 
   async loginUser(req: Request, res: Response, next: NextFunction): Promise<IUser | null> {
