@@ -35,6 +35,7 @@ export class UserController {
         .status(200)
         .json({access_token: accessToken})
     } catch (error) {
+      console.log(error)
       next(error)
     }
   }
