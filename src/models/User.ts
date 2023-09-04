@@ -1,6 +1,5 @@
-import mongoose, { FilterQuery, Model, ObjectId } from 'mongoose'
+import mongoose, { Model, ObjectId } from 'mongoose'
 import bcrypt from 'bcrypt'
-import { IUserMongoDb } from '../repositories/UserRepository'
 import createError from 'http-errors'
 
 export interface IUser {

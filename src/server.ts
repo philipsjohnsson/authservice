@@ -82,7 +82,6 @@ try {
     console.log('Press Ctrl-C to terminate...')
   })
 
-
 } catch (err) {
   console.error(err)
   process.exitCode = 1

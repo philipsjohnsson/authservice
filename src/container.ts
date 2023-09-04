@@ -1,15 +1,15 @@
 import { asClass, createContainer } from "awilix"
 import { scopePerRequest } from "awilix-express"
 import { Application } from "express"
-import { UserService, IUserService } from "./services/UserService"
-import { UserRepository, IUserRepository } from "./repositories/UserRepository"
+import { AuthService, IAuthService } from "./services/AuthService"
+import { AuthRepository, IAuthRepository } from "./repositories/AuthRepository"
 
 export const loadContainer = (app: Application) => {
   const container = createContainer({
   injectionMode: 'CLASSIC'
   })
-  .register<IUserService>('UserService', asClass(UserService).scoped())
-  .register<IUserRepository>('UserRepository', asClass(UserRepository).scoped())
+  .register<IAuthService>('AuthService', asClass(AuthService).scoped())
+  .register<IAuthRepository>('AuthRepository', asClass(AuthRepository).scoped())
 
   app.use(scopePerRequest(container))
 }

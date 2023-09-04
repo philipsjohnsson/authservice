@@ -3,7 +3,7 @@ import { IUser, User } from "../models/User"
 import { ObjectId } from "mongoose"
 import createError from 'http-errors'
 
-export interface IUserMongoDb {
+export interface IAuthMongoDb {
   _id: ObjectId,
   username: string,
   email: string,
@@ -14,12 +14,12 @@ export interface IUserMongoDb {
 }
 
 
-export interface IUserRepository {
+export interface IAuthRepository {
   registerUser(req: Request, res: Response, next: NextFunction): void
   loginUser(req: Request, res: Response, next: NextFunction): Promise<IUser | null>
 }
 
-export class UserRepository implements IUserRepository {
+export class AuthRepository implements IAuthRepository {
 
   async registerUser(req: Request, res: Response, next: NextFunction) {
       const newUser = new User({
