@@ -2,7 +2,7 @@ import { IAuthMongoDb, IAuthRepository } from "../repositories/AuthRepository"
 import { isCheckClientBadRequestOk } from "../middlewares/errorCheck"
 import { NextFunction, Request, Response } from "express"
 import createError from 'http-errors'
-import jwt, { JwtPayload, VerifyOptions, VerifyErrors, VerifyCallback } from 'jsonwebtoken'
+import jwt, { JwtPayload, Secret } from 'jsonwebtoken'
 import { IUser } from "../models/User"
 import crypto from 'crypto'
 import { ObjectId } from "mongoose"
@@ -36,7 +36,7 @@ interface IUserTest {
   _id: string;
 }
 
-interface IUserJwtPayload extends JwtPayload {
+interface IUserPayload extends JwtPayload {
   username: string,
   email: string,
   _id: string
@@ -45,11 +45,6 @@ interface IUserJwtPayload extends JwtPayload {
 interface ITokens {
   accessToken: string,
   refreshToken: string
-}
-
-type IVerifyCallback = {
-  err: VerifyErrors | null,
-  user: any
 }
 
 export class AuthService implements IAuthService {
@@ -117,33 +112,41 @@ export class AuthService implements IAuthService {
     return null
   }
 
-  async refreshToken(req: Request, res: Response, next: NextFunction): Promise<string | null> {
-    const refreshToken = req.body.refreshToken
-    let accessToken = null
+  
+async refreshToken(req: Request, res: Response, next: NextFunction): Promise<string | null> {
+  const refreshToken = req.body.refreshToken
+  let accessToken = null
 
-    if(refreshToken == null) {
-      throw createError(401)
-    }
-    if(!refreshToken.includes(refreshToken)) {
-      throw createError(403)
-    }
-    
-    if(process.env.REFRESH_TOKEN_SECRET) {
-      jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err: VerifyErrors | null, user: any) => {
-        if(err) {
-          throw createError(403)
-        }
-        if(process.env.PRIVATE_KEY) {
-          const token = Buffer.from(process.env.PRIVATE_KEY, 'base64')
-          accessToken = this.#generateAccessToken(user, token)
-        }
-      })
-    }
-
-    return accessToken
+  if (refreshToken == null) {
+    throw createError(401, 'Unauthorized: Missing refreshToken')
   }
 
-  #generateAccessToken(user: IPayloadUser, token: any) {
+  // Om du har något annat att jämföra refreshToken med, använd det här istället för includes
+  // if (!someOtherComparison(refreshToken)) {
+  //   throw createError(403, 'Forbidden: Invalid refreshToken');
+  // }
+
+  if (process.env.REFRESH_TOKEN_SECRET) {
+    try {
+      // Vänta på resultatet av verifieringen innan du går vidare
+      const decoded = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+      ) as IPayloadUser
+
+      if (process.env.PRIVATE_KEY) {
+        const token = Buffer.from(process.env.PRIVATE_KEY, 'base64')
+        accessToken = this.#generateAccessToken(decoded, token)
+      }
+    } catch (err) {
+      throw createError(403, 'Forbidden: Invalid refreshToken')
+    }
+  }
+
+  return accessToken
+}
+
+  #generateAccessToken(user: IPayloadUser, token: Secret) {
     console.log(user)
     const payload = {
       username: user.username,
