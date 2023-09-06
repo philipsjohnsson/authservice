@@ -46,7 +46,14 @@ try {
           status_code: 401,
           message: 'Credentials invalid or not provided.'
         })
-    } else if (err.status === 409) {
+    } else if (err.status === 403) {
+      return res
+        .status(403)
+        .json({
+          status_code: 403,
+          message: 'Forbidden.'
+        })
+      } else if (err.status === 409) {
       return res
         .sendStatus(409)
     } else if (err.status === 500) {

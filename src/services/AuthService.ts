@@ -4,8 +4,8 @@ import { NextFunction, Request, Response } from "express"
 import createError from 'http-errors'
 import jwt, { JwtPayload, Secret } from 'jsonwebtoken'
 import { IUser } from "../models/User"
-import crypto from 'crypto'
 import { ObjectId } from "mongoose"
+import { RefreshToken } from "../models/refreshToken"
 
 
 export interface IAuthService {
@@ -90,18 +90,15 @@ export class AuthService implements IAuthService {
           const tokenForRefresh = jwt.sign(payload, refreshToken, {
             expiresIn: '1d'
           })
-          console.log('test')
-          console.log(accessToken)
-          console.log('------------------------------')
-          console.log(tokenForRefresh)
-          this.db.push(tokenForRefresh)
 
           const tokens = {
             accessToken: accessToken,
             refreshToken: tokenForRefresh
           }
   
-          this.db.push(tokenForRefresh)
+          // this.db.push(tokenForRefresh)
+          // console.log(this.db)
+          this.#authRepository.addRefreshTokenToDb(tokenForRefresh)
           return tokens
         }
 
@@ -116,15 +113,26 @@ export class AuthService implements IAuthService {
 async refreshToken(req: Request, res: Response, next: NextFunction): Promise<string | null> {
   const refreshToken = req.body.refreshToken
   let accessToken = null
+  console.log('REFRESHTOKEN:')
+  console.log(refreshToken)
 
   if (refreshToken == null) {
+    console.log('refresh token isnt null')
     throw createError(401, 'Unauthorized: Missing refreshToken')
   }
 
-  // Om du har något annat att jämföra refreshToken med, använd det här istället för includes
-  // if (!someOtherComparison(refreshToken)) {
-  //   throw createError(403, 'Forbidden: Invalid refreshToken');
-  // }
+  // Implement database here..
+
+  console.log('---------------************------------------')
+
+  if(!await this.#authRepository.isRefreshTokenIncludesInDataBase(refreshToken)) {
+    throw createError(403, 'Forbidden: Invalid refreshToken')
+  }
+
+  /* if (!this.db.includes(refreshToken)) {
+    console.log('refreshtoken isnt in this db.')
+    throw createError(403, 'Forbidden: Invalid refreshToken');
+  } */
 
   if (process.env.REFRESH_TOKEN_SECRET) {
     try {
