@@ -1,12 +1,30 @@
-import { GET, POST, route } from "awilix-express"
+import { DELETE, GET, POST, route } from "awilix-express"
 import { IAuthService } from "../services/AuthService"
 import { NextFunction, Request, Response } from "express"
 import jwt from 'jsonwebtoken'
+import jwt_decode, { JwtPayload } from 'jwt-decode'
 
 interface IAuthController {
   registerUser(req: Request, res: Response, next: NextFunction): void,
   loginUser(req: Request, res: Response, next: NextFunction): void,
+  logoutUser(req: Request, res: Response, next: NextFunction): void,
   refreshToken(req: Request, res: Response, next: NextFunction): void
+}
+
+interface IPayloadUser {
+  username: string,
+  email: string,
+  _id: string,
+  iat: number,
+  exp: number
+}
+
+interface MyToken {
+  username: string,
+  email: string,
+  _id: string,
+  iat: number,
+  exp: number
 }
 
 @route('/auth')
@@ -46,19 +64,47 @@ export class AuthController implements IAuthController {
     }
   }
 
+  @route('/logout')
+  @DELETE()
+  async logoutUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      await this.#authService.logoutUser(req, res, next)
+
+      res
+        .status(204)
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  // Just for simple testing, will be removed..
   @route('/test/token')
   @POST()
   async testToken(req: Request, res: Response, next: NextFunction) {
     try {
-      console.log('TEST TOKEN')
       if(process.env.PUBLIC_KEY) {
         const publicKey = Buffer.from(process.env.PUBLIC_KEY, 'base64')
-        const [authenticationScheme, token]: any = req.headers.authorization?.split(' ')
-        console.log(authenticationScheme)
-        console.log(token)
-        console.log(publicKey)
-        console.log('ÅÅÅÅÅÅÅ')
-        console.log('___--__--__')
+        let [authenticationScheme, token]: any = req.headers.authorization?.split(' ')
+
+        const decodedJwt = jwt_decode<JwtPayload>(token)
+
+        if(decodedJwt.exp && Date.now() >= decodedJwt.exp * 1000 ) {
+          const data = {
+            refreshToken: req.body.refreshToken,
+            username: "Philip"
+          }
+          const response = await fetch('http://localhost:4050/auth/refresh/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+          })
+
+          const responseJson = await response.json()
+          token = responseJson.accessToken
+        }
+
         const test = jwt.verify(token, publicKey)
         console.log('-----')
         console.log(test)
@@ -69,22 +115,16 @@ export class AuthController implements IAuthController {
   }
 
   @route('/refresh/token')
-  @GET()
+  @POST()
   async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
-      console.log(req.body)
-      const refreshToken = req.body.token
       const accessToken = await this.#authService.refreshToken(req, res, next)
-      console.log(accessToken)
-      console.log('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR')
-      // const refreshToken
+
       res
         .status(201)
         .json({accessToken: accessToken})
 
     } catch (error) {
-      console.log('ERROR HANDLING')
-      console.log(error)
       next(error)
     }
   }

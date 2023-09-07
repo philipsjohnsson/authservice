@@ -3,14 +3,16 @@ import { isCheckClientBadRequestOk } from "../middlewares/errorCheck"
 import { NextFunction, Request, Response } from "express"
 import createError from 'http-errors'
 import jwt, { JwtPayload, Secret } from 'jsonwebtoken'
-import { IUser } from "../models/User"
+import { IUser, User } from "../models/User"
 import { ObjectId } from "mongoose"
 import { RefreshToken } from "../models/refreshToken"
+import CryptoJS , { AES } from "crypto-js"
 
 
 export interface IAuthService {
   refreshToken(req: Request, res: Response, next: NextFunction): Promise<string | null>,
   loginUser(req: Request, res: Response, next: NextFunction): Promise<object | null>,
+  logoutUser(req: Request, res: Response, next: NextFunction): void,
   registerUser(req: Request, res: Response, next: NextFunction): void
 }
 
@@ -20,26 +22,6 @@ interface IPayloadUser {
   _id: string,
   iat: number,
   exp: number
-}
-
-/* interface IUserJwtPayload extends JwtPayload {
-  username: string,
-  email: string,
-  _id: string,
-  iat: number,
-  exp: number
-} */
-
-interface IUserTest {
-  username: string;
-  email: string;
-  _id: string;
-}
-
-interface IUserPayload extends JwtPayload {
-  username: string,
-  email: string,
-  _id: string
 }
 
 interface ITokens {
@@ -67,7 +49,7 @@ export class AuthService implements IAuthService {
   }
 
   async loginUser(req: Request, res: Response, next: NextFunction): Promise<ITokens | null> {
-    if(process.env.PRIVATE_KEY !== undefined) {
+    if (process.env.PRIVATE_KEY !== undefined) {
       const token = Buffer.from(process.env.PRIVATE_KEY, 'base64')
 
       const refreshToken = process.env.REFRESH_TOKEN_SECRET
@@ -84,21 +66,20 @@ export class AuthService implements IAuthService {
         
         const accessToken = jwt.sign(payload, token, {
           algorithm: 'RS256',
-          expiresIn: '30s'
+          expiresIn: process.env.ACCESS_TOKEN_LIFE
         })
 
           const tokenForRefresh = jwt.sign(payload, refreshToken, {
-            expiresIn: '1d'
+            expiresIn: process.env.REFRESH_TOKEN_LIFE
           })
 
           const tokens = {
             accessToken: accessToken,
             refreshToken: tokenForRefresh
           }
-  
-          // this.db.push(tokenForRefresh)
-          // console.log(this.db)
-          this.#authRepository.addRefreshTokenToDb(tokenForRefresh)
+
+          await this.#authRepository.addRefreshTokenToDb(user.username, tokenForRefresh)
+
           return tokens
         }
 
@@ -109,34 +90,43 @@ export class AuthService implements IAuthService {
     return null
   }
 
+  async logoutUser(req: Request, res: Response, next: NextFunction) {
+    const refreshTokenBasedOnUser = await this.#authRepository.getRefreshTokenBasedOnUserFromDb(req.body.username)
+    if (process.env.ENCRYPTION_KEY && refreshTokenBasedOnUser?.toString()) {
+      const decryptedRefreshTokenFromDb = AES.decrypt(refreshTokenBasedOnUser, process.env.ENCRYPTION_KEY).toString(CryptoJS.enc.Utf8)
+      if(req.body.token === decryptedRefreshTokenFromDb) {
+      
+        this.#authRepository.deleteRefreshToken(req.body.username)
+      } else {
+        throw createError(400)
+      }
+    } else {
+      throw createError(400)
+    }
+  }
+
   
 async refreshToken(req: Request, res: Response, next: NextFunction): Promise<string | null> {
+  console.log('ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ')
+  console.log(req.body)
   const refreshToken = req.body.refreshToken
   let accessToken = null
-  console.log('REFRESHTOKEN:')
-  console.log(refreshToken)
 
   if (refreshToken == null) {
-    console.log('refresh token isnt null')
-    throw createError(401, 'Unauthorized: Missing refreshToken')
+    throw createError(401)
   }
 
-  // Implement database here..
+  const refreshTokenBasedOnUser = await this.#authRepository.getRefreshTokenBasedOnUserFromDb(req.body.username)
 
-  console.log('---------------************------------------')
-
-  if(!await this.#authRepository.isRefreshTokenIncludesInDataBase(refreshToken)) {
-    throw createError(403, 'Forbidden: Invalid refreshToken')
+  if (process.env.ENCRYPTION_KEY && refreshTokenBasedOnUser?.toString()) {
+    const decryptedTokenBasedOnUser = AES.decrypt(refreshTokenBasedOnUser, process.env.ENCRYPTION_KEY).toString(CryptoJS.enc.Utf8)
+    if(refreshToken !== decryptedTokenBasedOnUser) {
+      throw createError(403, 'Forbidden: Invalid refreshtoken')
+    }
   }
-
-  /* if (!this.db.includes(refreshToken)) {
-    console.log('refreshtoken isnt in this db.')
-    throw createError(403, 'Forbidden: Invalid refreshToken');
-  } */
 
   if (process.env.REFRESH_TOKEN_SECRET) {
     try {
-      // Vänta på resultatet av verifieringen innan du går vidare
       const decoded = jwt.verify(
         refreshToken,
         process.env.REFRESH_TOKEN_SECRET
@@ -155,7 +145,6 @@ async refreshToken(req: Request, res: Response, next: NextFunction): Promise<str
 }
 
   #generateAccessToken(user: IPayloadUser, token: Secret) {
-    console.log(user)
     const payload = {
       username: user.username,
       email: user.email,
@@ -163,7 +152,7 @@ async refreshToken(req: Request, res: Response, next: NextFunction): Promise<str
     }
     const accessToken = jwt.sign(payload, token, {
       algorithm: 'RS256',
-      expiresIn: '30s'
+      expiresIn: process.env.ACCESS_TOKEN_LIFE
     })
 
     return accessToken

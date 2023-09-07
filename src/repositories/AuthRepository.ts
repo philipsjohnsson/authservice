@@ -19,8 +19,9 @@ export interface IAuthMongoDb {
 export interface IAuthRepository {
   registerUser(req: Request, res: Response, next: NextFunction): void,
   loginUser(req: Request, res: Response, next: NextFunction): Promise<IUser | null>,
-  addRefreshTokenToDb(tokenForRefresh: string): void,
-  isRefreshTokenIncludesInDataBase(refreshToken: string): Promise<boolean> 
+  deleteRefreshToken(user: string): void,
+  addRefreshTokenToDb(user: string, tokenForRefresh: string): void,
+  getRefreshTokenBasedOnUserFromDb(user: string): Promise<string | null>
 }
 
 export class AuthRepository implements IAuthRepository {
@@ -39,12 +40,21 @@ export class AuthRepository implements IAuthRepository {
     return await User.authenticate(req.body.username, req.body.password)
   }
 
-  async addRefreshTokenToDb(tokenForRefresh: string) {
+  async deleteRefreshToken(user: string) {
+    console.log(user)
+
+    const deleted = await RefreshToken.deleteMany({ user: user })
+    console.log(deleted)
+  }
+
+  async addRefreshTokenToDb(user: string, tokenForRefresh: string) {
     if(process.env.ENCRYPTION_KEY) {
-      const encryptedRefreshToken = await AES.encrypt(tokenForRefresh, process.env.ENCRYPTION_KEY)
+
+      this.deleteRefreshToken(user)
       
       const newRefreshToken = new RefreshToken({
-        token: tokenForRefresh
+        token: tokenForRefresh,
+        user: user
       })
   
       await newRefreshToken.save()
@@ -53,22 +63,18 @@ export class AuthRepository implements IAuthRepository {
     }
   }
 
-  async isRefreshTokenIncludesInDataBase(refreshToken: string): Promise<boolean> {
-    console.log('check refresh token')
-    if(process.env.ENCRYPTION_KEY) {
-      // const encryptedRefreshToken = await AES.encrypt(refreshToken, process.env.ENCRYPTION_KEY)
-      // const encryptedRefreshToken2 = await AES.encrypt(refreshToken, process.env.ENCRYPTION_KEY)
-      // console.log(encryptedRefreshToken.toString())
-      const token = await RefreshToken.findOne({ token: refreshToken })
-      // const test = await RefreshToken.findOne({ token: 'nothing' })
-      console.log(token)
-      if(token === null) {
-        return false
-      } else {
-        return true
-      }
+  async getRefreshTokenBasedOnUserFromDb(user: string) {
+    console.log('^ÅEKMKEKRMEKR')
+    console.log(user)
+    const refreshTokenBasedOnUser = await RefreshToken.findOne({ user: user })
+    console.log('TEST TEST')
+    console.log(refreshTokenBasedOnUser)
+    if(refreshTokenBasedOnUser !== null) {
+      console.log('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+      console.log(refreshTokenBasedOnUser)
+      return refreshTokenBasedOnUser.token
     } else {
-      throw createError(500)
+      return null
     }
   }
 }
