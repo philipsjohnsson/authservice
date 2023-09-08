@@ -41,16 +41,13 @@ export class AuthRepository implements IAuthRepository {
   }
 
   async deleteRefreshToken(user: string) {
-    console.log(user)
-
-    const deleted = await RefreshToken.deleteMany({ user: user })
-    console.log(deleted)
+    await RefreshToken.deleteMany({ user: user })
   }
 
   async addRefreshTokenToDb(user: string, tokenForRefresh: string) {
     if(process.env.ENCRYPTION_KEY) {
 
-      this.deleteRefreshToken(user)
+      await this.deleteRefreshToken(user)
       
       const newRefreshToken = new RefreshToken({
         token: tokenForRefresh,
@@ -64,14 +61,9 @@ export class AuthRepository implements IAuthRepository {
   }
 
   async getRefreshTokenBasedOnUserFromDb(user: string) {
-    console.log('^ÅEKMKEKRMEKR')
-    console.log(user)
     const refreshTokenBasedOnUser = await RefreshToken.findOne({ user: user })
-    console.log('TEST TEST')
-    console.log(refreshTokenBasedOnUser)
     if(refreshTokenBasedOnUser !== null) {
-      console.log('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
-      console.log(refreshTokenBasedOnUser)
+
       return refreshTokenBasedOnUser.token
     } else {
       return null
