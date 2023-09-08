@@ -61,51 +61,15 @@ export class AuthController implements IAuthController {
     }
   }
 
-  // Just for simple testing, will be removed..
-  @route('/test/token')
-  @POST()
-  async testToken(req: Request, res: Response, next: NextFunction) {
-    try {
-      if(process.env.PUBLIC_KEY) {
-        const publicKey = Buffer.from(process.env.PUBLIC_KEY, 'base64')
-        let [authenticationScheme, token]: any = req.headers.authorization?.split(' ')
-
-        const decodedJwt = jwt_decode<JwtPayload>(token)
-
-        if(decodedJwt.exp && Date.now() >= decodedJwt.exp * 1000 ) {
-          const data = {
-            refreshToken: req.body.refreshToken,
-            username: "Philip"
-          }
-          const response = await fetch('http://localhost:4050/auth/refresh/token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
-          })
-
-          const responseJson = await response.json()
-          token = responseJson.accessToken
-        }
-
-        const test = jwt.verify(token, publicKey)
-        console.log(test)
-      }
-    } catch (error) {
-      next(error)
-    }
-  }
-
   @route('/refresh/token')
   @POST()
   async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
-      const accessToken = await this.#authService.genereateNewRefreshAndAccessToken(req, res, next)
+      const tokens = await this.#authService.genereateNewRefreshAndAccessToken(req, res, next)
 
       res
         .status(201)
-        .json({accessToken: accessToken})
+        .json({ tokens })
 
     } catch (error) {
       next(error)
