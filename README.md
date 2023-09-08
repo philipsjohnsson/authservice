@@ -8,11 +8,10 @@ Before running the authentication service, make sure to configure the following 
 
 - `DB_CONNECTION_STRING`: Set the database connection string.
 - `PORT`: Specify the port on which the service will run.
-- `PUBLIC_KEY`: Provide the public key for access token generation.
-- `PRIVATE_KEY`: Set the private key for access token generation.
+- `PRIVATE_KEY`: Set the private key for access token generation. (token should be a token pair, RS256, one public for client)
 - `ACCESS_TOKEN_LIFE`: Recommend setting the access token lifespan (e.g., around 5 minutes).
 - `REFRESH_TOKEN_LIFE`: Recommend setting the refresh token lifespan (e.g., 1 day).
-- `REFRESH_TOKEN_SECRET`: Configure the refresh token secret. Consider using an asymmetric key pair for added security.
+- `REFRESH_TOKEN_SECRET`: Configure the refresh token secret. (for now its not a key pair, Consider using an asymmetric public/private key pair for added security)
 - `ENCRYPTION_KEY`: Define the encryption key used for encryption with AES.
 
 ## Installation
