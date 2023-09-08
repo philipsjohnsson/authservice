@@ -45,8 +45,6 @@ export class AuthRepository implements IAuthRepository {
   }
 
   async addRefreshTokenToDb(user: string, tokenForRefresh: string) {
-    if(process.env.ENCRYPTION_KEY) {
-
       await this.deleteRefreshToken(user)
       
       const newRefreshToken = new RefreshToken({
@@ -55,9 +53,6 @@ export class AuthRepository implements IAuthRepository {
       })
   
       await newRefreshToken.save()
-    } else {
-      throw createError(500)
-    }
   }
 
   async getRefreshTokenBasedOnUserFromDb(user: string) {

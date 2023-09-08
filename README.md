@@ -1,25 +1,31 @@
-# Auth service
+# Authentication Service Readme
 
+## Description
+This is an authentication service that provides essential authentication functionalities such as login, logout, registration and refresh tokens.
 
+## Preparations
+Before running the authentication service, make sure to configure the following settings in the `.env` file:
 
-## Implementation of refresh token explained
-När en användare loggar in så skapas en access_token och en refresh_token. Alla refresh_tokens som är kopplade till den inloggade användaren tas bort från refresh_token databasen.
+- `DB_CONNECTION_STRING`: Set the database connection string.
+- `PORT`: Specify the port on which the service will run.
+- `PUBLIC_KEY`: Provide the public key for access token generation.
+- `PRIVATE_KEY`: Set the private key for access token generation.
+- `ACCESS_TOKEN_LIFE`: Recommend setting the access token lifespan (e.g., around 5 minutes).
+- `REFRESH_TOKEN_LIFE`: Recommend setting the refresh token lifespan (e.g., 1 day).
+- `REFRESH_TOKEN_SECRET`: Configure the refresh token secret. Consider using an asymmetric key pair for added security.
+- `ENCRYPTION_KEY`: Define the encryption key used for encryption with AES.
 
-När en användare loggar ut så tas refresh_token som är knuten till den specifika användaren bort från refresh_token databasen.
+## Installation
+To install the required dependencies, run the following command:
 
-När en användares access_token expires kan den förnyas med hjälp av refresh_tokenen.
+```bash
+npm install
+```
 
-Refresh_tokens på databasen är krypterade.
+Getting Started
 
+To start the authentication service in development, execute the following command:
 
-
-
-Refresh_token som genereras är för nu känslig för att läcka ut till andra användare, säkerhetsåtgärder bör tillämpas för detta.
-
-* ATT GÖRA: 
-
-När en access_token förnyas bör också en refresh_token förnyas.
-
-Skriva om SOLID, dependency injection
-
-Skriva klart hela README-filen.
+```bash
+npm run dev
+```
